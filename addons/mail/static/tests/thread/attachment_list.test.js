@@ -36,10 +36,10 @@ test("simplest layout", async () => {
     await start();
     await openDiscuss(channelId);
     await contains(".o-mail-Message .o-mail-AttachmentList");
-    expect($(".o-mail-AttachmentCard")[0]).toHaveAttribute("title", "test.txt");
+    expect(".o-mail-AttachmentCard:first").toHaveAttribute("title", "test.txt");
     await contains(".o-mail-AttachmentCard-image");
-    expect($(".o-mail-AttachmentCard-image")[0]).toHaveClass("o_image"); // required for mimetype.scss style
-    expect($(".o-mail-AttachmentCard-image")[0]).toHaveAttribute("data-mimetype", "text/plain"); // required for mimetype.scss style
+    expect(".o-mail-AttachmentCard-image:first").toHaveClass("o_image"); // required for mimetype.scss style
+    expect(".o-mail-AttachmentCard-image:first").toHaveAttribute("data-mimetype", "text/plain"); // required for mimetype.scss style
     await contains(".o-mail-AttachmentCard-aside button", { count: 2 });
     await contains(".o-mail-AttachmentCard-unlink");
     await contains(".o-mail-AttachmentCard-aside button[title='Download']");
@@ -341,7 +341,7 @@ test("should not view attachment from click on non-viewable attachment in list c
     });
     await start();
     await openDiscuss(channelId);
-    await contains(".o-mail-AttachmentImage[title='test.png'] img.o-viewable");
+    await contains(".o-mail-AttachmentImage[title='test.png'].o-viewable");
     await contains(".o-mail-AttachmentCard:not(.o-viewable)", { text: "test.odt" });
     await click(".o-mail-AttachmentCard", { text: "test.odt" });
     // weak test, no guarantee that we waited long enough for the potential file viewer to show

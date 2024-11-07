@@ -514,9 +514,17 @@ class AccountChartTemplate(models.AbstractModel):
                 ):
                     try:
                         values[fname] = self.ref(value).id if value not in ('', 'False', 'None') else False
-                    except ValueError as e:
-                        _logger.warning("Failed when trying to recover %s for field=%s", value, field)
-                        failed_fields.append(fname)
+                    except ValueError:
+                        if model != self.env['res.company']:
+                            _logger.warning("Failed when trying to recover %s for field=%s", value, field)
+                            failed_fields.append(fname)
+
+                        # We can't find the record referenced in the chart template in our database.
+                        # This might happen when we're creating a branch and the parent company has deleted the
+                        # referenced record and replaced it with something else.
+                        #
+                        # In this case, we try looking for the record already set on the company or its root.
+                        values[fname] = self.env.company[fname] or self.env.company.parent_ids[0][fname] or False
                 elif field.type in ('one2many', 'many2many') and isinstance(value[0], (list, tuple)):
                     for i, (command, _id, *last_part) in enumerate(value):
                         if last_part:
@@ -791,6 +799,34 @@ class AccountChartTemplate(models.AbstractModel):
             ])
             for company_attr_name, account in zip(accounts_data.keys(), accounts):
                 company[company_attr_name] = account
+
+        # No fields on company
+        is_accounting_installed_next = self.env["ir.module.module"].search([('name', '=', 'accountant')]).state in ('to install', 'installed')
+        if not company.parent_id and not is_accounting_installed_next:
+            accounts_data_no_fields = {
+                'account_journal_payment_debit_account_id': {
+                    'name': _("Outstanding Receipts"),
+                    'prefix': bank_prefix,
+                    'code_digits': code_digits,
+                    'account_type': 'asset_current',
+                    'reconcile': True,
+                },
+                'account_journal_payment_credit_account_id': {
+                    'name': _("Outstanding Payments"),
+                    'prefix': bank_prefix,
+                    'code_digits': code_digits,
+                    'account_type': 'asset_current',
+                    'reconcile': True,
+                },
+            }
+            self.env['account.account']._load_records([
+                {
+                    'xml_id': f"account.{company.id}_{xml_id}",
+                    'values': values,
+                    'noupdate': True,
+                }
+                for xml_id, values in accounts_data_no_fields.items()
+            ])
 
     @api.model
     def _instantiate_foreign_taxes(self, country, company):
