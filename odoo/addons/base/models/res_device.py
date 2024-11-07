@@ -72,6 +72,7 @@ class ResDeviceLog(models.Model):
 
     @api.model
     def _update_device(self, request):
+        return
         """
             Must be called when we want to update the device for the current request.
             Passage through this method must leave a "trace" in the session.
